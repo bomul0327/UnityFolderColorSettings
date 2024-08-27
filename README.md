@@ -1,4 +1,5 @@
 # Unity Folder Color Settings
+![Animation2](https://github.com/user-attachments/assets/39a8e3a1-d4d5-448d-a724-cf70b766e3fb)
 
 ## About
 
@@ -12,8 +13,7 @@ https://github.com/bomul0327/UnityFolderColorSettings.git
 ```
 
 ## How to Use?
-
-TBA
+![Animation](https://github.com/user-attachments/assets/58ebff85-3535-4c0e-bd9f-c1e41d47fde8)
 
 ## License
 
