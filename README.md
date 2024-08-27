@@ -6,7 +6,10 @@ This is an extension for customizing folder colors in Unity editor. Although the
 
 ## Installation
 
-TBA
+You can install the package using Unity's package manager.
+```
+https://github.com/bomul0327/UnityFolderColorSettings.git
+```
 
 ## How to Use?
 
@@ -14,4 +17,5 @@ TBA
 
 ## License
 
-TBA
+MIT License
+https://github.com/bomul0327/UnityFolderColorSettings/blob/main/LICENSE
