@@ -5,5 +5,10 @@
   "description": "Simple folder color settings for Unity editor. This only changes the color of folder.",
   "author": {
     "name": "UnrealChan"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bomul0327/UnityFolderColorSettings.git"
+  },
+  "license": "MIT"
 }
