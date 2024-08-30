@@ -95,7 +95,14 @@ namespace FolderColorSettings.Editor
                 var drawObject = AssetDatabase.LoadAssetAtPath<Object>(kv.Key);
                 using (new EditorGUI.DisabledScope(true))
                 {
-                    EditorGUILayout.ObjectField(drawObject, typeof(Object), false);
+                    if (drawObject)
+                    {
+                        EditorGUILayout.ObjectField(drawObject, typeof(Object), false);
+                    }
+                    else
+                    {
+                        EditorGUILayout.TextField(kv.Key);
+                    }
                 }
 
                 var newColor = EditorGUILayout.ColorField(kv.Value);
