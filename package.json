@@ -1,6 +1,6 @@
 {
   "name": "com.unrealchan.foldercolorsettings",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "displayName": "Folder Color Settings",
   "description": "Simple folder color settings for Unity editor. This only changes the color of folder.",
   "author": {
