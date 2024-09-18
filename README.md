@@ -13,12 +13,13 @@ https://github.com/bomul0327/UnityFolderColorSettings.git
 ```
 
 ## How to use?
-![Animation](https://github.com/user-attachments/assets/58ebff85-3535-4c0e-bd9f-c1e41d47fde8)
+![Animation3](https://github.com/user-attachments/assets/ae0ca8a4-0473-4ccb-8124-ff051a5acef5)
 
-1. Open the Preferences, then go to "Folder Color settings"
-2. To enable custom color, please check the "Use Custom Folder Color" toggle.
-3. You can add the settings by click the "Add / Modify" button.
-4. You can modify color and remove the settings under the "Current color settings" label.
+1. Open the **Preferences**, then go to **"Folder Color settings"**
+2. To enable custom color, please check the **"Use Custom Folder Color"** toggle.
+3. Select folders that you want to change.
+4. You can add the settings by clicking the "Add / Modify" button.
+5. You can modify colors and remove the settings under the "Current color settings" label.
 
 ## Limitations / issues
 
