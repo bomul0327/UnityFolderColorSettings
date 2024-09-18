@@ -9,7 +9,7 @@ using UnityEngine;
 using ColorUtility = UnityEngine.ColorUtility;
 using Object = UnityEngine.Object;
 
-namespace FolderColorSettings.Editor
+namespace UnityFolderColorSettings.Editor
 {
     /// <summary>
     /// This class only shows the UI.
@@ -21,11 +21,9 @@ namespace FolderColorSettings.Editor
         /// </summary>
         public static bool UseCustomFolderColor { get; private set; }
 
-        private static string _pathToAdd;
+        private static Dictionary<string, Color> ColorToAddDict = new Dictionary<string, Color>();
 
-        private static Object _objectToAdd;
-
-        private static Color _colorToAdd = Color.white;
+        private static Color DefaultColor = Color.white;
 
         static FolderColorSettingProvider()
         {
@@ -58,32 +56,37 @@ namespace FolderColorSettings.Editor
             }
 
             EditorGUILayout.Space(10);
-            EditorGUILayout.LabelField("Add the color setting", EditorStyles.largeLabel);
+            EditorGUILayout.LabelField("Select folders to add the color setting", EditorStyles.largeLabel);
 
-            EditorGUILayout.BeginHorizontal();
-
-            _objectToAdd = EditorGUILayout.ObjectField(_objectToAdd, typeof(Object), false);
-            _pathToAdd = AssetDatabase.GetAssetPath(_objectToAdd);
-            _colorToAdd = EditorGUILayout.ColorField(_colorToAdd);
-
-            if (GUILayout.Button("Add / Modify"))
+            foreach (var asset in Selection.GetFiltered<Object>(SelectionMode.Assets))
             {
-                try
+                string path = AssetDatabase.GetAssetPath(asset);
+                if (File.GetAttributes(path).HasFlag(FileAttributes.Directory))
                 {
-                    if (File.GetAttributes(_pathToAdd).HasFlag(FileAttributes.Directory))
+                    EditorGUILayout.BeginHorizontal();
+
+                    EditorGUILayout.ObjectField(asset, typeof(Object), false);
+
+                    var color = ColorToAddDict.GetValueOrDefault(path, DefaultColor);
+                    ColorToAddDict[path] = EditorGUILayout.ColorField(color);
+
+                    if (GUILayout.Button("Add / Modify"))
                     {
-                        FolderIconDrawer.ColorDict[_pathToAdd] = _colorToAdd;
-                        FolderIconDrawer.SaveColorSettings();
-                        EditorApplication.RepaintProjectWindow();
+                        try
+                        {
+                            FolderIconDrawer.ColorDict[path] = ColorToAddDict[path];
+                            FolderIconDrawer.SaveColorSettings();
+                            EditorApplication.RepaintProjectWindow();
+                        }
+                        catch
+                        {
+                            // ignored
+                        }
                     }
-                }
-                catch
-                {
-                    // ignored
+
+                    EditorGUILayout.EndHorizontal();
                 }
             }
-
-            EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.Space(20);
             EditorGUILayout.LabelField("Current color settings", EditorStyles.largeLabel);
@@ -141,6 +144,9 @@ namespace FolderColorSettings.Editor
         private static readonly Texture2D OpenedFolderTexture;
         private static readonly Texture2D EmptyFolderTexture;
 
+        /// <summary>
+        /// Key: path, Value: Color
+        /// </summary>
         public static Dictionary<string, Color> ColorDict = new Dictionary<string, Color>();
 
         static FolderIconDrawer()
@@ -153,14 +159,20 @@ namespace FolderColorSettings.Editor
             OpenedFolderTexture = EditorGUIUtility.FindTexture("d_FolderOpened Icon");
             EmptyFolderTexture = EditorGUIUtility.FindTexture("d_FolderEmpty Icon");
 
-            EditorApplication.projectWindowItemOnGUI += DrawFolderIcon;
+            EditorApplication.projectWindowItemInstanceOnGUI += DrawFolderIcon;
+            EditorApplication.update += UpdateProjectBrowser;
         }
 
-        public static void DrawFolderIcon(string guid, Rect rect)
+        private static void UpdateProjectBrowser()
+        {
+            ProjectWindowUtil.UpdateBrowserFields();
+        }
+
+        public static void DrawFolderIcon(int instanceid, Rect rect)
         {
             if (!FolderColorSettingProvider.UseCustomFolderColor) return;
 
-            var path = AssetDatabase.GUIDToAssetPath(guid);
+            var path = AssetDatabase.GetAssetPath(instanceid);
 
             if (string.IsNullOrEmpty(path) ||
                 Event.current.type != EventType.Repaint ||
@@ -250,41 +262,86 @@ namespace FolderColorSettings.Editor
     /// <summary>
     /// This util is for getting current tree view state in project window
     /// </summary>
+    [InitializeOnLoad]
     internal static class ProjectWindowUtil
     {
-        private static TreeViewState _currentTreeViewState;
+        private static Type ProjectBrowserType;
 
+        private static EditorWindow ProjectBrowser;
+
+        /// <summary>
+        /// Tree view state for one column
+        /// </summary>
+        private static TreeViewState CurrentAssetTreeViewState;
+
+        /// <summary>
+        /// Tree view state for two column
+        /// </summary>
+        private static TreeViewState CurrentFolderTreeViewState;
+
+        // 0 for one column, 1 for two column
+        private static int CurrentProjectBrowserMode;
+
+        private static FieldInfo AssetTreeStateField;
+
+        private static FieldInfo FolderTreeStateField;
+
+        private static FieldInfo ProjectBroswerMode;
+
+        static ProjectWindowUtil()
+        {
+            ProjectBrowserType = typeof(EditorWindow).Assembly.GetType("UnityEditor.ProjectBrowser");
+            AssetTreeStateField =
+                ProjectBrowserType.GetField("m_AssetTreeState", BindingFlags.NonPublic | BindingFlags.Instance);
+            FolderTreeStateField =
+                ProjectBrowserType.GetField("m_FolderTreeState", BindingFlags.NonPublic | BindingFlags.Instance);
+            ProjectBroswerMode =
+                ProjectBrowserType.GetField("m_ViewMode", BindingFlags.NonPublic | BindingFlags.Instance);
+        }
+
+        /// <summary>
+        /// Check whether current folder is opened or not
+        /// </summary>
+        /// <param name="path">Asset path</param>
+        /// <param name="mode">0 is one column, 1 is two column</param>
         public static bool IsFolderOpened(string path)
         {
-            if (_currentTreeViewState == null)
-            {
-                SetTreeViewState();
-            }
+            var state = CurrentProjectBrowserMode == 0 ? CurrentAssetTreeViewState : CurrentFolderTreeViewState;
 
-            if (_currentTreeViewState != null)
+            if (state != null)
             {
                 var instanceID = AssetDatabase.LoadAssetAtPath<Object>(path).GetInstanceID();
-                return _currentTreeViewState.expandedIDs.Contains(instanceID);
+                return state.expandedIDs.Contains(instanceID);
             }
 
             return false;
         }
 
-        private static void SetTreeViewState()
+        /// <summary>
+        /// Update tree view state from currently focused project browser
+        /// </summary>
+        public static void UpdateBrowserFields()
         {
             try
             {
-                var projectBrowserType = typeof(EditorWindow).Assembly.GetType("UnityEditor.ProjectBrowser");
-                var projectBrowser = EditorWindow.GetWindow(projectBrowserType);
+                var projectBrowsers = Resources.FindObjectsOfTypeAll(ProjectBrowserType);
 
-                var folderTreeStateField = projectBrowserType.GetField("m_FolderTreeState",
-                    BindingFlags.NonPublic | BindingFlags.Instance);
-                if (folderTreeStateField != null)
-                    _currentTreeViewState = folderTreeStateField.GetValue(projectBrowser) as TreeViewState;
+                foreach (var obj in projectBrowsers)
+                {
+                    var browser = obj as EditorWindow;
+                    if (browser.hasFocus)
+                    {
+                        ProjectBrowser = browser;
+                    }
+                }
+
+                CurrentAssetTreeViewState = AssetTreeStateField.GetValue(ProjectBrowser) as TreeViewState;
+                CurrentFolderTreeViewState = FolderTreeStateField.GetValue(ProjectBrowser) as TreeViewState;
+                CurrentProjectBrowserMode = (int)ProjectBroswerMode.GetValue(ProjectBrowser);
             }
             catch
             {
-                _currentTreeViewState = null;
+                CurrentFolderTreeViewState = null;
             }
         }
     }
