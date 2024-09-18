@@ -27,5 +27,4 @@ https://github.com/bomul0327/UnityFolderColorSettings.git
 
 ## License
 
-MIT License
-https://github.com/bomul0327/UnityFolderColorSettings/blob/main/LICENSE
+[MIT License](https://github.com/bomul0327/UnityFolderColorSettings/blob/main/LICENSE)
