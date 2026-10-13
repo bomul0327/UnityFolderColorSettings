@@ -159,7 +159,7 @@ namespace UnityFolderColorSettings.Editor
             OpenedFolderTexture = EditorGUIUtility.FindTexture("d_FolderOpened Icon");
             EmptyFolderTexture = EditorGUIUtility.FindTexture("d_FolderEmpty Icon");
 
-            EditorApplication.projectWindowItemInstanceOnGUI += DrawFolderIcon;
+            EditorApplication.projectWindowItemByEntityIdOnGUI += DrawFolderIcon;
             EditorApplication.update += UpdateProjectBrowser;
         }
 
@@ -168,11 +168,11 @@ namespace UnityFolderColorSettings.Editor
             ProjectWindowUtil.UpdateBrowserFields();
         }
 
-        public static void DrawFolderIcon(int instanceid, Rect rect)
+        public static void DrawFolderIcon(EntityId entityId, Rect rect)
         {
             if (!FolderColorSettingProvider.UseCustomFolderColor) return;
 
-            var path = AssetDatabase.GetAssetPath(instanceid);
+            var path = AssetDatabase.GetAssetPath(entityId);
 
             if (string.IsNullOrEmpty(path) ||
                 Event.current.type != EventType.Repaint ||
@@ -272,12 +272,12 @@ namespace UnityFolderColorSettings.Editor
         /// <summary>
         /// Tree view state for one column
         /// </summary>
-        private static TreeViewState CurrentAssetTreeViewState;
+        private static TreeViewState<EntityId> CurrentAssetTreeViewState;
 
         /// <summary>
         /// Tree view state for two column
         /// </summary>
-        private static TreeViewState CurrentFolderTreeViewState;
+        private static TreeViewState<EntityId> CurrentFolderTreeViewState;
 
         // 0 for one column, 1 for two column
         private static int CurrentProjectBrowserMode;
@@ -303,15 +303,14 @@ namespace UnityFolderColorSettings.Editor
         /// Check whether current folder is opened or not
         /// </summary>
         /// <param name="path">Asset path</param>
-        /// <param name="mode">0 is one column, 1 is two column</param>
         public static bool IsFolderOpened(string path)
         {
             var state = CurrentProjectBrowserMode == 0 ? CurrentAssetTreeViewState : CurrentFolderTreeViewState;
 
             if (state != null)
             {
-                var instanceID = AssetDatabase.LoadAssetAtPath<Object>(path).GetInstanceID();
-                return state.expandedIDs.Contains(instanceID);
+                var entityID = AssetDatabase.LoadAssetAtPath<Object>(path).GetEntityId();
+                return state.expandedIDs.Contains(entityID);
             }
 
             return false;
@@ -335,8 +334,8 @@ namespace UnityFolderColorSettings.Editor
                     }
                 }
 
-                CurrentAssetTreeViewState = AssetTreeStateField.GetValue(ProjectBrowser) as TreeViewState;
-                CurrentFolderTreeViewState = FolderTreeStateField.GetValue(ProjectBrowser) as TreeViewState;
+                CurrentAssetTreeViewState = AssetTreeStateField.GetValue(ProjectBrowser) as TreeViewState<EntityId>;
+                CurrentFolderTreeViewState = FolderTreeStateField.GetValue(ProjectBrowser) as TreeViewState<EntityId>;
                 CurrentProjectBrowserMode = (int)ProjectBroswerMode.GetValue(ProjectBrowser);
             }
             catch
